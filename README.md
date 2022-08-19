@@ -1,7 +1,7 @@
 # Proyecto_R
 Repositorio para el proyecto final del curso de R
 
-##Lista de actividades
+## Lista de actividades
 - Almacena los gráficos resultantes en formato png
 - Crea un dashboard donde se muestren los resultados con 4 pestañas:
 
