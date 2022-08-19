@@ -1,11 +1,16 @@
 install.packages("dplyr")
 install.packages("ggplot2")
 install.packages("remotes")
-library(remotes)
+install.packages("hrbrthemes")
 install_github("CRAN/FbRanks")
+library(remotes)
 library(fbRanks)
 library(dplyr)
 library(ggplot2)
+
+library(hrbrthemes)
+
+#setwd()
 
 #Obtener links de datasets
 u1011 <- "https://www.football-data.co.uk/mmz4281/1011/SP1.csv"
@@ -77,6 +82,41 @@ data <- rename(data,Home_score = FTHG,
 
 #Ordenamos las columnas para tener el data set listo
 data <- select(data, Date, HomeTeam, Home_score, AwayTeam,Away_score,Max2.5_under:Avg2.5_over)
+
+
+#Graficas de goles local
+data %>%
+  ggplot()+
+  aes(Home_score)+
+  geom_histogram(binwidth = 1.5,colour="black",fill = "blue")+
+  labs(x = "Goles anotados", y = "Frecuencia")
+
+#Grafica de goles visitante
+data %>%
+  ggplot()+
+  aes(Away_score)+
+  geom_histogram(binwidth = 1.5,colour="black",fill = "yellow")+
+  labs(x = "Goles anotados", y = "Frecuencia")
+
+#Probabilidad conjunta
+tabla_prob_goles = table(data$Home_score,data$Away_score)
+matriz_prob = prop.table(tabla_prob_goles)
+
+#Mapa de calor de la probabilidad conjunta
+heatmap(matriz_prob,xlab = "Goles visita",ylab = "Goles local")
+
+ggplot(data,aes(x = Home_score, y = Away_score, fill = (Home_score + (Away_score))  ))+geom_tile()+
+  scale_fill_gradient(low="white", high="blue") +
+  labs(x = "Goles local", y = "Goles visitante", fill = "Goles")
+
+#Geometria goles anotados de local por cada gol de visitante
+data %>%
+  ggplot()+
+  aes(Home_score)+
+  geom_bar()+
+  facet_wrap("Away_score")+
+  theme(axis.title=element_text(size=10,face="bold"))+
+  labs(x = "Goles Local",y="Frecuencia")
 
 #Preparamos el data para el FbRanks
 #Tenemos que obtener la fecha y los resultados de los partidos
@@ -160,3 +200,19 @@ for(i in 1:length(unique(resultados$date)-355)){
 data_predecidad <- data.frame(predicted_hometeams,predicted_home_goals,
                               predicted_awayteams,predicted_awaygoals)
 data_predecidad
+
+
+#Verificamos NA
+matrizNA <- is.na(predicted_awaygoals | predicted_home_goals)
+matrizNA
+#No hay datos NA
+
+#Obtenemos los momios
+momios <- filter(data,data$Date >= unique(resultados$date[355]))
+#Probando los momios
+mean(predicted_home_goals == momios$Home_score) #Promedio de No. de goles predecidos que coinciden con los anotados
+mean(predicted_awaygoals == momios$Away_score)
+
+mean(predicted_awaygoals+predicted_home_goals > 3) #Proporcion de partidos que anotaron más de 3
+
+mean(momios$Home_score + momios$Away_score > 3)/mean(momios$Away_score >= 1)
